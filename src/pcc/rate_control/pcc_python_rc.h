@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "pcc_rc.h"
-#include <python3.5/Python.h>
+#include <python3.6/Python.h>
 #include <iostream>
 #include <sstream>
 
@@ -26,7 +26,7 @@ class PccPythonRateController : public PccRateController {
 
   void Reset();
  private:
-  
+
   static void InitializePython();
   static int GetNextId();
   static std::mutex interpreter_lock_;
@@ -47,7 +47,7 @@ class PccPythonRateController : public PccRateController {
   int id;
   bool has_time_offset;
   uint64_t time_offset_usec;
-  
+
   PyObject* module;
   PyObject* give_sample_func;
   PyObject* get_rate_func;
