@@ -15,7 +15,7 @@ To test that PCC is functioning, you can run:
 
 ```bash
 cd src
-export LD\_LIBRARY\_PATH=$LD\_LIBRARY\_PATH:`pwd`/core/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/core/
 ./app/pccserver recv 9000
 ```
 
@@ -25,7 +25,7 @@ and in a separate terminal, run:
 
 ```bash
 cd src
-export LD\_LIBRARY\_PATH=$LD\_LIBRARY\_PATH:`pwd`/core/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/core/
 ./app/pccclient send 127.0.0.1 9000
 ```
 
