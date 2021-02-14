@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
 
     freeaddrinfo(res);
 
-    cout << "server is ready at port: " << service << endl;
+    cerr << "server is ready at port: " << service << endl;
 
     if (UDT::ERROR == UDT::listen(serv, 10)) {
         cout << "listen: " << UDT::getlasterror().getErrorMessage() << endl;
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
         char clienthost[NI_MAXHOST];
         char clientservice[NI_MAXSERV];
         getnameinfo((sockaddr *)&clientaddr, addrlen, clienthost, sizeof(clienthost), clientservice, sizeof(clientservice), NI_NUMERICHOST|NI_NUMERICSERV);
-        cout << "new connection: " << clienthost << ":" << clientservice << endl;
+        cerr << "new connection: " << clienthost << ":" << clientservice << endl;
 
         pthread_t worker_thread;
         if (should_recv) {
@@ -181,10 +181,9 @@ void* recv_monitor(void* s)
          break;
       }
 
-      cout << perf.mbpsRecvRate << "\t\t"
+      cout << perf.mbpsRecvRate << "\t"
            << perf.msRTT << "\t"
-           << perf.pktRecv << "\t\t"
-           << std::endl;
+           << perf.pktRecv << std::endl;
    }
 
       return NULL;
@@ -197,7 +196,7 @@ void* send_monitor(void* s)
 
    UDT::TRACEINFO perf;
 
-   cout << "Send Rate(Mb/s)\tRTT(ms)\t\tSent\t\tLost" << endl;
+   cout << "Send Rate(Mb/s)\tRTT(ms)\tSent\tLost" << endl;
 
    while (true)
    {
@@ -210,11 +209,10 @@ void* send_monitor(void* s)
          break;
       }
 
-      cout << perf.mbpsSendRate << "\t\t"
+      cout << perf.mbpsSendRate << "\t"
            << perf.msRTT << "\t"
            << perf.pktSentTotal << "\t"
-           << perf.pktSndLossTotal << "\t"
-           << std::endl;
+           << perf.pktSndLossTotal << std::endl;
    }
 
       return NULL;

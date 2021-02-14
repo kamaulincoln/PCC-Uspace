@@ -11,6 +11,11 @@
 
 using namespace std;
 
+struct monitor_args {
+    UDTSOCKET* client_ptr;
+    const char* output_filename;
+};
+
 void* monitor(void*);
 
 UDTSOCKET client;
@@ -21,24 +26,28 @@ void intHandler(int dummy) {
 }
 
 void prusage() {
-    cout << "usage: .../pccclient <send|recv> server_ip server_port [OPTIONS]" << endl;
+    cout << "usage: .../pccclient <send|recv> server_ip server_port outputfile [OPTIONS]" << endl;
     exit(-1);
 }
 
 int main(int argc, char* argv[]) {
-    
-    if ((argc < 4) || (0 == atoi(argv[3]))) {
+
+    if ((argc < 5) || (0 == atoi(argv[3]))) {
         prusage();
     }
     const char* send_str = argv[1];
     const char* ip_str   = argv[2];
     const char* port_str = argv[3];
+    const char* output_filename = argv[4];
+
+    struct monitor_args m_args;
+    m_args.output_filename = output_filename;
     Options::Parse(argc, argv);
 
     bool should_send = !strcmp(send_str, "send");
-    
+
 	signal(SIGINT, intHandler);
-   
+
     // use this function to initialize the UDT library
     UDT::startup();
 
@@ -56,6 +65,7 @@ int main(int argc, char* argv[]) {
     }
 
     client = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
+    m_args.client_ptr = &client;
 
     freeaddrinfo(local);
 
@@ -71,7 +81,8 @@ int main(int argc, char* argv[]) {
     }
     freeaddrinfo(peer);
 
-    pthread_create(new pthread_t, NULL, monitor, &client);
+    // pthread_create(new pthread_t, NULL, monitor, &client);
+    pthread_create(new pthread_t, NULL, monitor, &m_args);
 
 
     int batch_size = DATA_BATCH_SIZE;
@@ -82,18 +93,18 @@ int main(int argc, char* argv[]) {
         int cur_size = 0;
         int this_call_size = 0;
         while (!stop && cur_size < batch_size) {
-            
+
             if (should_send) {
                 this_call_size = UDT::send(client, data + cur_size, batch_size - cur_size, 0);
             } else {
                 this_call_size = UDT::recv(client, data + cur_size, batch_size - cur_size, 0);
             }
-            
+
             if (this_call_size == UDT::ERROR) {
                 cout << "send/recv: " << UDT::getlasterror().getErrorMessage() << std::endl;
                 break;
             }
-            
+
             cur_size += this_call_size;
         }
     }
@@ -109,24 +120,30 @@ int main(int argc, char* argv[]) {
 }
 
 void* monitor(void* s) {
+    struct monitor_args* args = (struct monitor_args*)s;
 
-    UDTSOCKET u = *(UDTSOCKET*)s;
+    UDTSOCKET u = *(UDTSOCKET*)args->client_ptr;
     UDT::TRACEINFO perf;
 
-    cout << "\tRate (Mbps)\tRTT (ms)\tSent\t\tLost" << endl;
-    int i = 0;
-    while (true) {
-        sleep(1);
-        i++;
-        if (UDT::ERROR == UDT::perfmon(u, &perf)) {
-            cout << "perfmon: " << UDT::getlasterror().getErrorMessage() << endl;
-            break;
+    ofstream output_file(args->output_filename);
+    if (output_file.is_open()) {
+        output_file << "Index\tRate(Mbps)\tRTT(ms)\tSent\tLost" << endl;
+        int i = 0;
+        while (true) {
+            sleep(1);
+            i++;
+            if (UDT::ERROR == UDT::perfmon(u, &perf)) {
+                cout << "perfmon: " << UDT::getlasterror().getErrorMessage() << endl;
+                break;
+            }
+            cout << i << endl;
+            output_file   << i << "\t"
+                          << perf.mbpsSendRate    << "\t\t"
+                          << perf.msRTT           << "\t\t"
+                          << perf.pktSentTotal    << "\t\t"
+                          << perf.pktSndLossTotal << endl;
         }
-        cout   << i <<"\t"
-               << perf.mbpsSendRate    << "\t\t"
-               << perf.msRTT           << "\t\t"
-               << perf.pktSentTotal    << "\t\t"
-               << perf.pktSndLossTotal << endl;
+        output_file.close();
     }
     return NULL;
 }
