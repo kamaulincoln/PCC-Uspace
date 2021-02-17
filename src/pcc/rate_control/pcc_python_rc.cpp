@@ -45,7 +45,7 @@ PccPythonRateController::PccPythonRateController(double call_freq,
     if (!python_initialized_) {
         InitializePython();
     }
-    
+
     id = GetNextId();
     has_time_offset = false;
     time_offset_usec = 0;
@@ -64,14 +64,14 @@ PccPythonRateController::PccPythonRateController(double call_freq,
     if (python_filename_arg != NULL) {
         python_filename = python_filename_arg;
     }
-    
+
     module = PyImport_ImportModule(python_filename);
     if (module == NULL) {
         std::cerr << "ERROR: Could not load python module: " << python_filename << std::endl;
         PyErr_Print();
         exit(-1);
     }
-    
+
     PyObject* init_func = PyObject_GetAttrString(module, "init");
     if (init_func == NULL) {
         std::cerr << "ERROR: Could not load python function: init" << std::endl;
@@ -81,24 +81,24 @@ PccPythonRateController::PccPythonRateController(double call_freq,
     PyObject* id_obj = PyLong_FromLong(id);
     static PyObject* args = PyTuple_New(1);
     PyTuple_SetItem(args, 0, id_obj);
-    
+
     PyObject* init_result = PyObject_CallObject(init_func, args);
     PyErr_Print();
-    
+
     give_sample_func = PyObject_GetAttrString(module, "give_sample");
     if (give_sample_func == NULL) {
         std::cerr << "ERROR: Could not load python function: give_sample" << std::endl;
         PyErr_Print();
         exit(-1);
     }
-    
+
     get_rate_func = PyObject_GetAttrString(module, "get_rate");
     if (get_rate_func == NULL) {
         std::cerr << "ERROR: Could not load python function: get_rate" << std::endl;
         PyErr_Print();
         exit(-1);
     }
-    
+
     reset_func = PyObject_GetAttrString(module, "reset");
     if (reset_func == NULL) {
         std::cerr << "ERROR: Could not load python function: reset" << std::endl;
@@ -113,7 +113,7 @@ void PccPythonRateController::Reset() {
     PyObject* id_obj = PyLong_FromLong(id);
     static PyObject* args = PyTuple_New(1);
     PyTuple_SetItem(args, 0, id_obj);
-    
+
     PyObject* result = PyObject_CallObject(reset_func, args);
     PyErr_Print();
 }
@@ -132,43 +132,43 @@ void PccPythonRateController::GiveSample(int bytes_sent,
 
     std::lock_guard<std::mutex> lock(interpreter_lock_);
     static PyObject* args = PyTuple_New(11);
-    
+
     // flow_id
     PyTuple_SetItem(args, 0, PyLong_FromLong(id));
-    
+
     // bytes_sent
     PyTuple_SetItem(args, 1, PyLong_FromLong(bytes_sent));
-    
+
     // bytes_acked
     PyTuple_SetItem(args, 2, PyLong_FromLong(bytes_acked));
-    
+
     // bytes_lost
     PyTuple_SetItem(args, 3, PyLong_FromLong(bytes_lost));
-    
+
     // send_start_time
     PyTuple_SetItem(args, 4, PyFloat_FromDouble(send_start_time_sec));
-    
+
     // send_end_time
     PyTuple_SetItem(args, 5, PyFloat_FromDouble(send_end_time_sec));
-    
+
     // recv_start_time
     PyTuple_SetItem(args, 6, PyFloat_FromDouble(recv_start_time_sec));
-    
+
     // recv_end_time
     PyTuple_SetItem(args, 7, PyFloat_FromDouble(recv_end_time_sec));
 
     // rtt_samples
     PyObject* rtt_samples = PyList_New(2);
-    PyList_SetItem(rtt_samples, 0, PyLong_FromLong(first_ack_latency_sec));
-    PyList_SetItem(rtt_samples, 1, PyLong_FromLong(last_ack_latency_sec));
+    PyList_SetItem(rtt_samples, 0, PyFloat_FromDouble(first_ack_latency_sec));
+    PyList_SetItem(rtt_samples, 1, PyFloat_FromDouble(last_ack_latency_sec));
     PyTuple_SetItem(args, 8, rtt_samples);
-    
+
     // packet_size
     PyTuple_SetItem(args, 9, PyLong_FromLong(packet_size));
-    
+
     // recv_end_time
     PyTuple_SetItem(args, 10, PyFloat_FromDouble(utility));
-    
+
     PyObject_CallObject(give_sample_func, args);
 
 }
@@ -178,6 +178,10 @@ void PccPythonRateController::MonitorIntervalFinished(const MonitorInterval& mi)
         time_offset_usec = mi.GetSendStartTime();
         has_time_offset = true;
     }
+    // std::cerr << "time offset: " << time_offset_usec << std::endl;
+    std::cerr << "first ack latency: " << mi.GetFirstAckLatency() << std::endl;
+    std::cerr << "last ack latency: " << mi.GetLastAckLatency() << std::endl;
+    std::cerr << "usec per sec: " << USEC_PER_SEC << std::endl;
     GiveSample(
         mi.GetBytesSent(),
         mi.GetBytesAcked(),
@@ -196,18 +200,18 @@ void PccPythonRateController::MonitorIntervalFinished(const MonitorInterval& mi)
 QuicBandwidth PccPythonRateController::GetNextSendingRate(QuicBandwidth current_rate, QuicTime cur_time) {
 
     std::lock_guard<std::mutex> lock(interpreter_lock_);
-    
+
     PyObject* id_obj = PyLong_FromLong(id);
     static PyObject* args = PyTuple_New(1);
     PyTuple_SetItem(args, 0, id_obj);
-    
+
     PyObject* result = PyObject_CallObject(get_rate_func, args);
     if (result == NULL) {
         std::cout << "ERROR: Failed to call python get_rate() func" << std::endl;
         PyErr_Print();
         exit(-1);
     }
-    
+
     double result_double = PyFloat_AsDouble(result);
     PyErr_Print();
     if (!PyFloat_Check(result)) {
