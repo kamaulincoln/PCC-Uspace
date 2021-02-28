@@ -120,7 +120,7 @@ CUDT::CUDT()
 
 
 	// Default UDT configurations
-	m_iMSS = 1500;
+	m_iMSS = 1464;
 	m_bSynSending = true;
 	m_bSynRecving = true;
 	m_iFlightFlagSize = 1000000;
@@ -1561,7 +1561,7 @@ void CUDT::add_to_loss_record(int32_t loss1, int32_t loss2){
     }
     OnCongestionEvent(CTimer::getTime(), 0, acked_packets, lost_packets);
     pcc_sender_lock.unlock();
-		
+
 #ifdef EXPERIMENTAL_FEATURE_CONTINOUS_SEND
 	pthread_mutex_lock(&m_LossrecordLock);
 	loss_record1.push_back(loss1);
@@ -1573,7 +1573,7 @@ void CUDT::add_to_loss_record(int32_t loss1, int32_t loss2){
 void CUDT::ProcessAck(CPacket& ctrlpkt) {
     int32_t seq_no = *(int32_t*)ctrlpkt.m_pcData;
     int32_t msg_no = ctrlpkt.m_iMsgNo;
-    
+
     pcc_sender_lock.lock();
     int32_t latest_msg_no = packet_tracker_->GetPacketLastMsgNo(seq_no);
     PacketId pkt_id = packet_tracker_->GetPacketId(seq_no, msg_no);
@@ -1594,7 +1594,7 @@ void CUDT::ProcessAck(CPacket& ctrlpkt) {
         pcc_sender_lock.unlock();
         return;
     }
-    
+
     if (pkt_id == 0) {
         pcc_sender_lock.unlock();
         return;
@@ -1742,7 +1742,7 @@ uint64_t CUDT::GetSendingInterval() {
     static double prev_rate = 0;
     if (pcc_sender->PacingRate(0) != prev_rate) {
         std::cerr << "Sending rate changed to " << pcc_sender->PacingRate(0) / 1000000.0f << "mbps" << std::endl;
-        std::cerr << "New clock cycle interval is " << 
+        std::cerr << "New clock cycle interval is " <<
             m_ullCPUFrequency * m_iMSS * 8.0f * 1000000.0f / pcc_sender->PacingRate(0)
             << std::endl;
         prev_rate = pcc_sender->PacingRate(0);
@@ -1792,7 +1792,7 @@ int CUDT::packData(CPacket& packet, uint64_t& ts)
 
 	++m_llSentTotal;
 	++m_llTraceSent;
-    
+
     int64_t interval = GetSendingInterval();
     if (m_ullTimeDiff >= interval) {
         ts = entertime;
@@ -1836,7 +1836,7 @@ int CUDT::processData(CUnit* unit)
 
 	if (m_pRcvBuffer->addData(unit, offset) < 0)
 		return -1;
-	
+
     return 0;
 }
 
