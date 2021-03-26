@@ -183,7 +183,7 @@ void PccPythonRateController::MonitorIntervalFinished(const MonitorInterval& mi)
         time_offset_usec = mi.GetSendStartTime();
         has_time_offset = true;
     }
-    std::cerr << "MI " << mi.GetId() << " finished, GiveSample bytes_sent=" <<
+    std::cerr << "MI " << mi.GetId() << " finished, " << " GiveSample bytes_sent=" <<
         mi.GetBytesSent() << ", bytes_acked=" <<
         mi.GetBytesAcked() << ", bytes_lost=" <<
         mi.GetBytesLost() << ", send_start=" <<
@@ -237,7 +237,7 @@ QuicBandwidth PccPythonRateController::GetNextSendingRate(QuicBandwidth current_
         exit(-1);
     }
     Py_DECREF(result);
-    std::cerr << "Get Rate " << result_double / 1000000.0 << std::endl;
+    std::cerr << "Get Rate " << result_double / 1000000.0 << ", cur_time: "  << cur_time << std::endl;
 
     return result_double;
 }

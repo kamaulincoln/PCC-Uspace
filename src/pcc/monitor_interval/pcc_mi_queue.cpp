@@ -98,20 +98,28 @@ void PccMonitorIntervalQueue::OnCongestionEvent(
     return;
   }
 
-  for (MonitorInterval& interval : monitor_intervals_) {
-    if (interval.AllPacketsAccountedFor(event_time)) {
-      // Skips intervals that have available utilities.
-      continue;
-    }
+  // for (MonitorInterval& interval : monitor_intervals_) {
+  //   if (interval.AllPacketsAccountedFor(event_time)) {
+  //     // Skips intervals that have available utilities.
+  //     continue;
+  //   }
+  //
+  //   for (const AckedPacket& acked_packet : acked_packets) {
+  //     interval.OnPacketAcked(event_time, acked_packet.packet_number, acked_packet.bytes_acked, rtt_us);
+  //   }
+  //
+  //   for (const LostPacket& lost_packet : lost_packets) {
+  //     interval.OnPacketLost(event_time, lost_packet.packet_number, lost_packet.bytes_lost);
+  //   }
+  // }
 
+  // only the first unfinished MI record the acked packets and lost packets
     for (const AckedPacket& acked_packet : acked_packets) {
-      interval.OnPacketAcked(event_time, acked_packet.packet_number, acked_packet.bytes_acked, rtt_us);
+      monitor_intervals_.back().OnPacketAcked(event_time, acked_packet.packet_number, acked_packet.bytes_acked, rtt_us);
     }
-
     for (const LostPacket& lost_packet : lost_packets) {
-      interval.OnPacketLost(event_time, lost_packet.packet_number, lost_packet.bytes_lost);
+      monitor_intervals_.back().OnPacketLost(event_time, lost_packet.packet_number, lost_packet.bytes_lost);
     }
-  }
 }
 
 const MonitorInterval& PccMonitorIntervalQueue::Current() const {

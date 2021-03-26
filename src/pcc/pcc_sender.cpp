@@ -242,7 +242,7 @@ void PccSender::OnCongestionEvent(UDT_UNUSED bool rtt_updated,
                                     event_time);
   while (interval_queue_.HasFinishedInterval(event_time)) {
     MonitorInterval mi = interval_queue_.Pop();
-    //std::cerr << "MI Finished with: " << mi.n_packets_sent << ", loss " << mi.GetObsLossRate() << std::endl;
+    std::cerr << "MI " << mi.GetId() << " Finished, cur_time: " << event_time << std::endl;
     mi.SetUtility(utility_calculator_->CalculateUtility(interval_analysis_group_, mi));
     rate_control_lock_->lock();
     rate_controller_->MonitorIntervalFinished(mi);
