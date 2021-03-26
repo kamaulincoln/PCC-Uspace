@@ -88,9 +88,10 @@ struct MonitorInterval {
 
   QuicBandwidth GetTargetSendingRate() const;
   QuicTime GetStartTime() const;
+  QuicTime GetEndTime() const;
 
   void SetUtility(float utility);
-  
+
   QuicBandwidth GetObsThroughput() const;
   QuicBandwidth GetObsSendingRate() const;
   float GetObsSendDur() const;
@@ -102,9 +103,9 @@ struct MonitorInterval {
 
   int GetId() const { return id; }
 
-  int GetBytesSent() const { return bytes_sent; } 
-  int GetBytesAcked() const { return bytes_acked; } 
-  int GetBytesLost() const { return bytes_lost; } 
+  int GetBytesSent() const { return bytes_sent; }
+  int GetBytesAcked() const { return bytes_acked; }
+  int GetBytesLost() const { return bytes_lost; }
 
   uint64_t GetSendStartTime() const { return first_packet_sent_time; }
   uint64_t GetSendEndTime() const { return last_packet_sent_time; }
@@ -116,6 +117,8 @@ struct MonitorInterval {
 
   int GetAveragePacketSize() const { return bytes_sent / n_packets_sent; }
   double GetUtility() const { return utility; }
+
+  const std::vector<PacketRttSample>& GetRTTSamples() const;
 
  private:
   static int next_id;

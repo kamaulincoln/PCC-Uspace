@@ -39,8 +39,9 @@ class PccPythonRateController : public PccRateController {
                   double send_end_time_sec,
                   double recv_start_time_sec,
                   double recv_end_time_sec,
-                  double first_ack_latency_sec,
-                  double last_ack_latency_sec,
+                  const std::vector<PacketRttSample>& packet_rtt_samples,
+                  // double first_ack_latency_sec,
+                  // double last_ack_latency_sec,
                   int packet_size,
                   double utility);
 

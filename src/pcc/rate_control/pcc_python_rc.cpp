@@ -125,8 +125,9 @@ void PccPythonRateController::GiveSample(int bytes_sent,
                                          double send_end_time_sec,
                                          double recv_start_time_sec,
                                          double recv_end_time_sec,
-                                         double first_ack_latency_sec,
-                                         double last_ack_latency_sec,
+                                         const std::vector<PacketRttSample>& packet_rtt_samples,
+                                         // double first_ack_latency_sec,
+                                         // double last_ack_latency_sec,
                                          int packet_size,
                                          double utility) {
 
@@ -158,9 +159,13 @@ void PccPythonRateController::GiveSample(int bytes_sent,
     PyTuple_SetItem(args, 7, PyFloat_FromDouble(recv_end_time_sec));
 
     // rtt_samples
-    PyObject* rtt_samples = PyList_New(2);
-    PyList_SetItem(rtt_samples, 0, PyFloat_FromDouble(first_ack_latency_sec));
-    PyList_SetItem(rtt_samples, 1, PyFloat_FromDouble(last_ack_latency_sec));
+    // PyObject* rtt_samples = PyList_New(2);
+    // PyList_SetItem(rtt_samples, 0, PyFloat_FromDouble(first_ack_latency_sec));
+    // PyList_SetItem(rtt_samples, 1, PyFloat_FromDouble(last_ack_latency_sec));
+    PyObject* rtt_samples = PyList_New(packet_rtt_samples.size());
+    for(unsigned int i = 0; i < packet_rtt_samples.size(); ++i) {
+        PyList_SetItem(rtt_samples, i, PyFloat_FromDouble(packet_rtt_samples[i].rtt  / (double)USEC_PER_SEC ));
+    }
     PyTuple_SetItem(args, 8, rtt_samples);
 
     // packet_size
@@ -178,17 +183,34 @@ void PccPythonRateController::MonitorIntervalFinished(const MonitorInterval& mi)
         time_offset_usec = mi.GetSendStartTime();
         has_time_offset = true;
     }
+    std::cerr << "MI " << mi.GetId() << " finished, GiveSample bytes_sent=" <<
+        mi.GetBytesSent() << ", bytes_acked=" <<
+        mi.GetBytesAcked() << ", bytes_lost=" <<
+        mi.GetBytesLost() << ", send_start=" <<
+        (mi.GetSendStartTime() - time_offset_usec) / (double)USEC_PER_SEC << ", send_end=" <<
+        (mi.GetSendEndTime() - time_offset_usec) / (double)USEC_PER_SEC << ", recv_start=" <<
+        (mi.GetRecvStartTime() - time_offset_usec) / (double)USEC_PER_SEC << ", recv_end=" <<
+        (mi.GetRecvEndTime() - time_offset_usec) / (double)USEC_PER_SEC << ", 1st_ack_latency=" <<
+        mi.GetFirstAckLatency() / (double)USEC_PER_SEC << ", last_ack_latency=" <<
+        mi.GetLastAckLatency() / (double)USEC_PER_SEC << ", pkt_size=" <<
+        mi.GetAveragePacketSize() <<  ", mi_dur=" <<
+        (mi.GetEndTime() - mi.GetStartTime()) /(double) USEC_PER_SEC << std::endl;
     GiveSample(
         mi.GetBytesSent(),
         mi.GetBytesAcked(),
         mi.GetBytesLost(),
-        (mi.GetSendStartTime() - time_offset_usec) / (double)USEC_PER_SEC,
-        (mi.GetSendEndTime() - time_offset_usec) / (double)USEC_PER_SEC,
+        (mi.GetStartTime() - time_offset_usec) / (double)USEC_PER_SEC, // added by Zhengxu
+        (mi.GetEndTime() - time_offset_usec) / (double)USEC_PER_SEC, // added by Zhengxu
+        // (mi.GetStartTime() - time_offset_usec) / (double)USEC_PER_SEC, // added by Zhengxu
+        // (mi.GetEndTime() - time_offset_usec) / (double)USEC_PER_SEC, // added by Zhengxu
+        // (mi.GetSendStartTime() - time_offset_usec) / (double)USEC_PER_SEC,
+        // (mi.GetSendEndTime() - time_offset_usec) / (double)USEC_PER_SEC,
         (mi.GetRecvStartTime() - time_offset_usec) / (double)USEC_PER_SEC,
-        (mi.GetRecvEndTime() - time_offset_usec) / (double)USEC_PER_SEC,
-        mi.GetFirstAckLatency() / (double)USEC_PER_SEC,
-        mi.GetLastAckLatency() / (double)USEC_PER_SEC,
+        (mi.GetRecvEndTime() - time_offset_usec) / (double)USEC_PER_SEC, //  + 1/(mi.GetTargetSendingRate() / 8 / mi.GetAveragePacketSize()),
+        mi.GetRTTSamples(), // added by Zhengxu
         mi.GetAveragePacketSize(),
+        // mi.GetFirstAckLatency() / (double)USEC_PER_SEC,
+        // mi.GetLastAckLatency() / (double)USEC_PER_SEC,
         mi.GetUtility()
     );
 }
@@ -215,6 +237,7 @@ QuicBandwidth PccPythonRateController::GetNextSendingRate(QuicBandwidth current_
         exit(-1);
     }
     Py_DECREF(result);
+    std::cerr << "Get Rate " << result_double / 1000000.0 << std::endl;
 
     return result_double;
 }
