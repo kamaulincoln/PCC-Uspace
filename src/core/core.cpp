@@ -1738,7 +1738,7 @@ uint64_t CUDT::GetSendingInterval() {
      * frequency         * m_iMSS * 8      *  1 / sending_rate (in bits/second)
      */
 
-#ifdef DEBUG_CORE_SENDING_RATE
+// #ifdef DEBUG_CORE_SENDING_RATE
     static double prev_rate = 0;
     if (pcc_sender->PacingRate(0) != prev_rate) {
         std::cerr << "Sending rate changed to " << pcc_sender->PacingRate(0) / 1000000.0f << "mbps" << std::endl;
@@ -1747,7 +1747,7 @@ uint64_t CUDT::GetSendingInterval() {
             << std::endl;
         prev_rate = pcc_sender->PacingRate(0);
     }
-#endif
+// #endif
     return m_ullCPUFrequency * m_iMSS * 8.0f * 1000000.0f / pcc_sender->PacingRate(0);
 }
 
@@ -1927,6 +1927,7 @@ void CUDT::checkTimers()
 {
     bool above_loss_threshold = true;
     uint64_t loss_thresh_us = 2.0 * m_iRTT + 4 * m_iRTTVar;
+    // std::cerr << "loss_thresh: "  << loss_thresh_us / 1000.0 << "ms" << std::endl;
     struct timespec cur_time;
     clock_gettime(CLOCK_MONOTONIC, &cur_time);
 

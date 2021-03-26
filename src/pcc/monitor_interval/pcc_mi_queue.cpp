@@ -83,6 +83,7 @@ void PccMonitorIntervalQueue::OnPacketSent(QuicTime sent_time,
   }
 
   MonitorInterval& interval = monitor_intervals_.back();
+  std::cerr << "MI " << interval.GetId() << " sent pkt "<< packet_number << " at "  << sent_time << std::endl;
   interval.OnPacketSent(sent_time, packet_number, bytes);
 }
 
