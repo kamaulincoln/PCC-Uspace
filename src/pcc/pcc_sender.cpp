@@ -53,8 +53,8 @@ const size_t kInitialRttMicroseconds = 1 * 1000;
 // Number of bits per byte.
 const size_t kBitsPerByte = 8;
 // Duration of monitor intervals as a proportion of RTT.
-// const float kMonitorIntervalDuration = 0.5f;
-const float kMonitorIntervalDuration = 1.0f;
+const float kMonitorIntervalDuration = 0.5f;
+// const float kMonitorIntervalDuration = 1.0f;
 // const float kMonitorIntervalDuration = 1.5f;
 // Minimum number of packets in a monitor interval.
 const size_t kMinimumPacketsPerInterval = 5;
@@ -201,6 +201,15 @@ void PccSender::OnPacketSent(QuicTime sent_time,
                              UDT_UNUSED HasRetransmittableData is_retransmittable) {
 
   if (ShouldCreateNewMonitorInterval(sent_time)) {
+      while (interval_queue_.HasFinishedInterval(sent_time)) {
+        MonitorInterval mi = interval_queue_.Pop();
+        std::cerr << "MI " << mi.GetId() << " Finished, end_time: " << mi.GetEndTime() << ", cur_time: " << sent_time << ", gap: " << (mi.GetEndTime() - sent_time) / 1000000.0 << std::endl;
+        mi.SetUtility(utility_calculator_->CalculateUtility(interval_analysis_group_, mi));
+        rate_control_lock_->lock();
+        rate_controller_->MonitorIntervalFinished(mi);
+        rate_control_lock_->unlock();
+      }
+      // std:: cerr << "PccSender OnPacketSent: while loop  finishes" << std::endl;
     // Set the monitor duration to 1.5 of smoothed rtt.
     QuicTime rtt_estimate = GetCurrentRttEstimate(sent_time);
     float sending_rate = UpdateSendingRate(sent_time);
@@ -240,14 +249,14 @@ void PccSender::OnCongestionEvent(UDT_UNUSED bool rtt_updated,
                                     lost_packets,
                                     rtt_estimate,
                                     event_time);
-  while (interval_queue_.HasFinishedInterval(event_time)) {
-    MonitorInterval mi = interval_queue_.Pop();
-    std::cerr << "MI " << mi.GetId() << " Finished, cur_time: " << event_time << std::endl;
-    mi.SetUtility(utility_calculator_->CalculateUtility(interval_analysis_group_, mi));
-    rate_control_lock_->lock();
-    rate_controller_->MonitorIntervalFinished(mi);
-    rate_control_lock_->unlock();
-  }
+  // while (interval_queue_.HasFinishedInterval(event_time)) {
+  //   MonitorInterval mi = interval_queue_.Pop();
+  //   std::cerr << "MI " << mi.GetId() << " Finished, end_time: " << mi.GetEndTime() << ", cur_time: " << event_time << std::endl;
+  //   mi.SetUtility(utility_calculator_->CalculateUtility(interval_analysis_group_, mi));
+  //   rate_control_lock_->lock();
+  //   rate_controller_->MonitorIntervalFinished(mi);
+  //   rate_control_lock_->unlock();
+  // }
 }
 
 #ifdef QUIC_PORT

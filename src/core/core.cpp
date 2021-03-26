@@ -1741,10 +1741,10 @@ uint64_t CUDT::GetSendingInterval() {
 // #ifdef DEBUG_CORE_SENDING_RATE
     static double prev_rate = 0;
     if (pcc_sender->PacingRate(0) != prev_rate) {
-        std::cerr << "Sending rate changed to " << pcc_sender->PacingRate(0) / 1000000.0f << "mbps" << std::endl;
-        std::cerr << "New clock cycle interval is " <<
-            m_ullCPUFrequency * m_iMSS * 8.0f * 1000000.0f / pcc_sender->PacingRate(0)
-            << std::endl;
+        // std::cerr << "Sending rate changed to " << pcc_sender->PacingRate(0) / 1000000.0f << "mbps" << std::endl;
+        // std::cerr << "New clock cycle interval is " <<
+        //     m_ullCPUFrequency * m_iMSS * 8.0f * 1000000.0f / pcc_sender->PacingRate(0)
+        //     << std::endl;
         prev_rate = pcc_sender->PacingRate(0);
     }
 // #endif
@@ -1770,7 +1770,7 @@ int CUDT::packData(CPacket& packet, uint64_t& ts)
     } else if (packet_tracker_->HasSendablePackets()) {
         seq_no = packet_tracker_->GetLowestSendableSeqNo();
     } else {
-        std::cout << "no transmittable packets" << std::endl;
+        std::cerr << "no transmittable packets" << std::endl;
         pcc_sender_lock.unlock();
         return 0;
     }

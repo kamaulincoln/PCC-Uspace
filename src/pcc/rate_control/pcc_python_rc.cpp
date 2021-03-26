@@ -225,7 +225,7 @@ QuicBandwidth PccPythonRateController::GetNextSendingRate(QuicBandwidth current_
 
     PyObject* result = PyObject_CallObject(get_rate_func, args);
     if (result == NULL) {
-        std::cout << "ERROR: Failed to call python get_rate() func" << std::endl;
+        std::cerr << "ERROR: Failed to call python get_rate() func" << std::endl;
         PyErr_Print();
         exit(-1);
     }
@@ -233,7 +233,7 @@ QuicBandwidth PccPythonRateController::GetNextSendingRate(QuicBandwidth current_
     double result_double = PyFloat_AsDouble(result);
     PyErr_Print();
     if (!PyFloat_Check(result)) {
-        std::cout << "ERROR: Output from python get_rate() is not a float" << std::endl;
+        std::cerr << "ERROR: Output from python get_rate() is not a float" << std::endl;
         exit(-1);
     }
     Py_DECREF(result);
