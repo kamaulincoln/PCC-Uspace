@@ -354,7 +354,8 @@ private: // Packet sizes
    int m_iRcvPayloadSize;                          // Maximum/regular payload size, in bytes
 
 private: // Options
-   int m_iMSS;                                  // Maximum Segment Size, in bytes
+   int m_iMSS;                                  // Maximum Segment Size, in bytes. changed to work with Pantheon VPN/tunnel
+   int m_iMSS_default;                                  // Default Maximum Segment Size, in bytes
    bool m_bSynSending;                          // Sending syncronization mode
    bool m_bSynRecving;                          // Receiving syncronization mode
    int m_iFlightFlagSize;                       // Maximum number of packets in flight from the peer side

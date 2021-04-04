@@ -121,6 +121,7 @@ CUDT::CUDT()
 
 	// Default UDT configurations
 	m_iMSS = 1464;
+	m_iMSS_default = 1500;
 	m_bSynSending = true;
 	m_bSynRecving = true;
 	m_iFlightFlagSize = 1000000;
@@ -1748,7 +1749,8 @@ uint64_t CUDT::GetSendingInterval() {
         prev_rate = pcc_sender->PacingRate(0);
     }
 // #endif
-    return m_ullCPUFrequency * m_iMSS * 8.0f * 1000000.0f / pcc_sender->PacingRate(0);
+    // return m_ullCPUFrequency * m_iMSS * 8.0f * 1000000.0f / pcc_sender->PacingRate(0);
+    return m_ullCPUFrequency * m_iMSS_default * 8.0f * 1000000.0f / pcc_sender->PacingRate(0);
 }
 
 int CUDT::packData(CPacket& packet, uint64_t& ts)
