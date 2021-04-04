@@ -43,8 +43,9 @@ PacketRttSample::PacketRttSample(QuicPacketNumber packet_number,
 
 int MonitorInterval::next_id = 0;
 
-MonitorInterval::MonitorInterval(QuicBandwidth sending_rate, QuicTime end_time) {
+MonitorInterval::MonitorInterval(QuicBandwidth sending_rate, QuicTime start_time, QuicTime end_time) {
     this->target_sending_rate = sending_rate;
+    this->start_time = start_time;
     this->end_time = end_time;
     bytes_sent = 0;
     bytes_acked = 0;
@@ -107,21 +108,26 @@ void MonitorInterval::OnPacketAcked(QuicTime cur_time, QuicPacketNumber packet_n
 }
 
 void MonitorInterval::OnPacketLost(QuicTime cur_time, QuicPacketNumber packet_number, QuicByteCount packet_size) {
-    if (ContainsPacket(packet_number) && packet_number > last_packet_number_accounted_for) {
-        int skipped = (packet_number - last_packet_number_accounted_for) - 1;
-        bytes_lost += packet_size;
-        n_packets_accounted_for += skipped + 1;
-        last_packet_number_accounted_for = packet_number;
-    } else if (packet_number > last_packet_number) {
-        n_packets_accounted_for = n_packets_sent;
-        last_packet_number_accounted_for = last_packet_number;
-    }
-    if (packet_number >= first_packet_number && first_packet_ack_time == 0) {
+    bytes_lost += packet_size;
+    if (first_packet_ack_time == 0) {
         first_packet_ack_time = cur_time;
     }
-    if (packet_number >= last_packet_number && last_packet_ack_time == 0) {
-        last_packet_ack_time = cur_time;
-    }
+    last_packet_ack_time = cur_time;
+    // if (ContainsPacket(packet_number) && packet_number > last_packet_number_accounted_for) {
+    //     int skipped = (packet_number - last_packet_number_accounted_for) - 1;
+    //     bytes_lost += packet_size;
+    //     n_packets_accounted_for += skipped + 1;
+    //     last_packet_number_accounted_for = packet_number;
+    // } else if (packet_number > last_packet_number) {
+    //     n_packets_accounted_for = n_packets_sent;
+    //     last_packet_number_accounted_for = last_packet_number;
+    // }
+    // if (packet_number >= first_packet_number && first_packet_ack_time == 0) {
+    //     first_packet_ack_time = cur_time;
+    // }
+    // if (packet_number >= last_packet_number && last_packet_ack_time == 0) {
+    //     last_packet_ack_time = cur_time;
+    // }
 }
 
 bool MonitorInterval::AllPacketsSent(QuicTime cur_time) const {
@@ -134,7 +140,8 @@ bool MonitorInterval::AllPacketsAccountedFor(QuicTime cur_time) {
 }
 
 QuicTime MonitorInterval::GetStartTime() const {
-    return first_packet_sent_time;
+    // return first_packet_sent_time;
+    return start_time;
 }
 
 QuicTime MonitorInterval::GetEndTime() const {

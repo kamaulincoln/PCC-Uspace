@@ -46,15 +46,16 @@ const QuicBandwidth kMinimumRateChange = QuicBandwidth::FromBitsPerSecond(
 #else
 const float kNumMicrosPerSecond = 1000000.0f;
 // Default TCPMSS used in UDT only.
-const size_t kDefaultTCPMSS = 1420;
+// const size_t kDefaultTCPMSS = 1420;
+const size_t kDefaultTCPMSS = 1500;
 // An inital RTT value to use (10ms)
 const size_t kInitialRttMicroseconds = 1 * 1000;
 #endif
 // Number of bits per byte.
 const size_t kBitsPerByte = 8;
 // Duration of monitor intervals as a proportion of RTT.
-const float kMonitorIntervalDuration = 0.5f;
-// const float kMonitorIntervalDuration = 1.0f;
+// const float kMonitorIntervalDuration = 0.5f;
+const float kMonitorIntervalDuration = 1.0f;
 // const float kMonitorIntervalDuration = 1.5f;
 // Minimum number of packets in a monitor interval.
 const size_t kMinimumPacketsPerInterval = 5;
@@ -75,9 +76,9 @@ QuicTime::Delta PccSender::ComputeMonitorDuration(
 QuicTime PccSender::ComputeMonitorDuration(
     QuicBandwidth sending_rate,
     QuicTime rtt) {
-    std::cerr << "ComputeMonitorDuration: " << kMonitorIntervalDuration * rtt << ", " <<
-               kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
-                   kDefaultTCPMSS / (float)sending_rate << std::endl;
+    // std::cerr << "ComputeMonitorDuration: " << kMonitorIntervalDuration * rtt << ", " <<
+    //            kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
+    //                kDefaultTCPMSS / (float)sending_rate << std::endl;
     if (rtt == 0)
         return kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
                    kDefaultTCPMSS / (float)sending_rate;
@@ -201,9 +202,13 @@ void PccSender::OnPacketSent(QuicTime sent_time,
                              UDT_UNUSED HasRetransmittableData is_retransmittable) {
 
   if (ShouldCreateNewMonitorInterval(sent_time)) {
+      QuicTime rtt_estimate = GetCurrentRttEstimate(sent_time);
+      QuicTime start_time = sent_time;
       while (interval_queue_.HasFinishedInterval(sent_time)) {
         MonitorInterval mi = interval_queue_.Pop();
-        std::cerr << "MI " << mi.GetId() << " Finished, end_time: " << mi.GetEndTime() << ", cur_time: " << sent_time << ", gap: " << (mi.GetEndTime() - sent_time) / 1000000.0 << std::endl;
+        start_time = mi.GetEndTime();
+        rtt_estimate = mi.GetObsRtt();
+        // std::cerr << "MI " << mi.GetId() << " Finished, end_time: " << mi.GetEndTime() << ", cur_time: " << sent_time << ", gap: " << (mi.GetEndTime() - sent_time) / 1000000.0 << std::endl;
         mi.SetUtility(utility_calculator_->CalculateUtility(interval_analysis_group_, mi));
         rate_control_lock_->lock();
         rate_controller_->MonitorIntervalFinished(mi);
@@ -211,13 +216,13 @@ void PccSender::OnPacketSent(QuicTime sent_time,
       }
       // std:: cerr << "PccSender OnPacketSent: while loop  finishes" << std::endl;
     // Set the monitor duration to 1.5 of smoothed rtt.
-    QuicTime rtt_estimate = GetCurrentRttEstimate(sent_time);
+    // QuicTime rtt_estimate = GetCurrentRttEstimate(sent_time);
     float sending_rate = UpdateSendingRate(sent_time);
     QuicTime monitor_duration = ComputeMonitorDuration(sending_rate, rtt_estimate);
     //std::cerr << "\tTime: " << sent_time << std::endl;
     //std::cerr << "\tPacket Number: " << packet_number << std::endl;
-    MonitorInterval mi = MonitorInterval(sending_rate, sent_time + monitor_duration);
-    std::cerr << "MI " << mi.GetId() << " create, Duration: " << monitor_duration/1000000.0 << "s" << std::endl;
+    MonitorInterval mi = MonitorInterval(sending_rate, start_time, start_time + monitor_duration);
+    // std::cerr << "MI " << mi.GetId() << " create, Duration: " << monitor_duration/1000000.0 << "s" << ", rtt" << rtt_estimate/1000000.0 << std::endl;
     interval_queue_.Push(mi);
 
     #if defined(QUIC_PORT) && defined(QUIC_PORT_LOCAL)
