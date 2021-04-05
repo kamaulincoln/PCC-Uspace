@@ -1,9 +1,12 @@
 export CC = g++
 
-export CCFLAGS = -g -std=c++0x -Wall
+# export CCFLAGS = -g -std=c++0x -Wall
+export CCFLGS = -std=c++0x -I/home/zxxia/.virtualenvs/aurora/include/python3.6m -I/home/zxxia/.virtualenvs/aurora/include/python3.6m -Wno-unused-result -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -flto -fuse-linker-plugin -ffat-lto-objects
 
 # export LDFLAGS = -Lcore -L/usr/lib/python3.5/config-3.5m-x86_64-linux-gnu/ -lpython3.5 -lstdc++ -lpthread -lm
-export LDFLAGS = -Lcore -L/usr/lib/python3.6/config-3.6m-x86_64-linux-gnu/ -lpython3.6 -lstdc++ -lpthread -lm
+# export LDFLAGS = -Lcore -L/usr/lib/python3.6/config-3.6m-x86_64-linux-gnu/ -lpython3.6 -lstdc++ -lpthread -lm
+export LDFLAGS = -Lcore -lstdc++ -lpython3.6m -lpthread -ldl -lutil -lm -Xlinker -export-dynamic -Wl,-O1 -Wl,-Bsymbolic-functions
+
 
 LIB_SOURCES = $(wildcard core/*.cpp)
 LIB_SOURCES += $(wildcard pcc/monitor_interval/*.cpp)
