@@ -6,6 +6,14 @@ std::mutex PccPythonRateController::interpreter_lock_;
 bool PccPythonRateController::python_initialized_ = false;
 
 void PccPythonRateController::InitializePython() {
+
+    // Parse the path to a python interpreter
+    // useful when a virtual environment is used
+    const char* pyprogram_arg = Options::Get("-pyprogram=");
+    if (pyprogram_arg != NULL) {
+        wchar_t *program = Py_DecodeLocale(pyprogram_arg, NULL);
+        Py_SetProgramName(program);
+    }
     Py_Initialize();
     PyRun_SimpleString("import sys");
 
@@ -26,6 +34,7 @@ void PccPythonRateController::InitializePython() {
     }
     set_argv_ss << "]";
     std::string set_argv_str = set_argv_ss.str();
+    std::cerr << "set_argv_str: " << set_argv_str << std::endl;
     PyRun_SimpleString(set_argv_str.c_str());
 
     python_initialized_ = true;
