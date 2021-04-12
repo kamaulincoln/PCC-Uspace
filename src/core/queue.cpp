@@ -573,6 +573,8 @@ DWORD WINAPI CSndQueue::worker(LPVOID param)
 			if (self->m_pSndUList->pop(addr, pkt) < 0)
 			{//cout<<"popfails"<<endl;
 				continue;}
+			// CTimer::rdtsc(currtime);
+            // std::cerr << "send packet curtime=" << currtime << ", ts=" << ts << ", ts-currtime=" << ts-currtime << std::endl;
 
 			self->m_pChannel->sendto(addr, pkt);
 		}

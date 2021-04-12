@@ -1554,7 +1554,7 @@ void CUDT::add_to_loss_record(int32_t loss1, int32_t loss2){
         CongestionEvent loss_event;
         loss_event.packet_number = pkt_id;
         loss_event.bytes_acked = 0;
-        loss_event.bytes_lost = packet_tracker_->GetPacketSize(loss);
+        loss_event.bytes_lost = packet_tracker_->GetPacketSize(loss) + CPacket::m_iPktHdrSize + 28 + (m_iMSS_default - m_iMSS);;
         loss_event.time = CTimer::getTime();
         lost_packets.push_back(loss_event);
         packet_tracker_->OnPacketLoss(loss, msg_no);
@@ -1606,7 +1606,7 @@ void CUDT::ProcessAck(CPacket& ctrlpkt) {
     CongestionEvent ack_event;
     ack_event.time = CTimer::getTime();
     ack_event.packet_number = pkt_id;
-    ack_event.bytes_acked = size;
+    ack_event.bytes_acked = size + CPacket::m_iPktHdrSize + 28 + (m_iMSS_default - m_iMSS);
     ack_event.bytes_lost = 0;
     acked_packets.push_back(ack_event);
     OnCongestionEvent(CTimer::getTime(), rtt_us, acked_packets, lost_packets);
@@ -1750,6 +1750,7 @@ uint64_t CUDT::GetSendingInterval() {
     }
 // #endif
     // return m_ullCPUFrequency * m_iMSS * 8.0f * 1000000.0f / pcc_sender->PacingRate(0);
+    // std::cerr << "CPUFreq="<< m_ullCPUFrequency << ", pacing_rate=" << pcc_sender->PacingRate(0) << ", send_interval=" << send_interval << std::endl;
     return m_ullCPUFrequency * m_iMSS_default * 8.0f * 1000000.0f / pcc_sender->PacingRate(0);
 }
 
@@ -1785,10 +1786,11 @@ int CUDT::packData(CPacket& packet, uint64_t& ts)
     packet.m_iMsgNo = msg_no + 1;
     packet_tracker_->OnPacketSent(packet);
     PacketId pkt_id = packet_tracker_->GetPacketId(seq_no, packet.m_iMsgNo);
-    pcc_sender->OnPacketSent(CTimer::getTime(), 0, pkt_id, payload, false);
+    pcc_sender->OnPacketSent(entertime, 0, pkt_id,
+            payload + CPacket::m_iPktHdrSize + 28 + (m_iMSS_default - m_iMSS), false);
     pcc_sender_lock.unlock();
 
-	packet.m_iTimeStamp = int(CTimer::getTime() - m_StartTime);
+	packet.m_iTimeStamp = int(entertime - m_StartTime);
 	packet.m_iID = m_PeerID;
 	packet.setLength(payload);
 
@@ -1805,6 +1807,8 @@ int CUDT::packData(CPacket& packet, uint64_t& ts)
     }
 	m_ullTargetTime = ts;
     TotalBytes += payload;
+    std::cerr << "entertime=" << entertime << ", TimeDiff=" << m_ullTimeDiff
+        << ", ts=targetTime=" << ts << std::endl;
 	return payload;
 }
 
