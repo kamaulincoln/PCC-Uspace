@@ -146,9 +146,9 @@ class QUIC_EXPORT_PRIVATE PccSender
   #else
   QuicTime ComputeMonitorDuration(
       QuicBandwidth sending_rate,
-      QuicTime rtt);
+      QuicTime rtt, QuicTime prev_dur);
   #endif
-  
+
   #ifndef QUIC_PORT
   PccEventLogger* log;
   void Reset();
@@ -160,7 +160,7 @@ class QUIC_EXPORT_PRIVATE PccSender
   #ifdef QUIC_PORT
   friend class test::PccSenderPeer;
   #endif
-  
+
   void UpdateCurrentRttEstimate(QuicTime rtt);
 
   bool ShouldCreateNewMonitorInterval(QuicTime cur_time);
@@ -168,7 +168,7 @@ class QUIC_EXPORT_PRIVATE PccSender
 
   // Sending rate in Mbit/s for the next monitor intervals.
   QuicBandwidth sending_rate_;
-  
+
   // Queue of monitor intervals with pending utilities.
   PccMonitorIntervalQueue interval_queue_;
   // Group of previously measured monitor intervals.
@@ -180,7 +180,7 @@ class QUIC_EXPORT_PRIVATE PccSender
   #else
   QuicTime avg_rtt_;
   #endif
-  
+
   PccUtilityCalculator* utility_calculator_;
   PccRateController* rate_controller_;
   std::mutex* rate_control_lock_;

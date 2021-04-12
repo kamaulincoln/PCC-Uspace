@@ -75,13 +75,18 @@ QuicTime::Delta PccSender::ComputeMonitorDuration(
 #else
 QuicTime PccSender::ComputeMonitorDuration(
     QuicBandwidth sending_rate,
-    QuicTime rtt) {
-    // std::cerr << "ComputeMonitorDuration: " << kMonitorIntervalDuration * rtt << ", " <<
-    //            kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
-    //                kDefaultTCPMSS / (float)sending_rate << std::endl;
-    if (rtt == 0)
+    QuicTime rtt, QuicTime prev_dur) {
+    std::cerr << "ComputeMonitorDuration: rtt=" << rtt << ", 1.0 * RTT=" <<
+        kMonitorIntervalDuration * rtt << ", dur of sending rate=" <<
+               kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
+                   kDefaultTCPMSS / (float)sending_rate << ", prev_dur=" << prev_dur << std::endl;
+    if (rtt == 0 && prev_dur == 0)
         return kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
                    kDefaultTCPMSS / (float)sending_rate;
+    if (rtt == 0)
+        return prev_dur;
+    // return std::max(kMonitorIntervalDuration * rtt, kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
+    //                kDefaultTCPMSS / (float)sending_rate);
     return kMonitorIntervalDuration * rtt;
 }
 #endif
@@ -113,7 +118,7 @@ PccSender::PccSender(QuicTime initial_rtt_us,
       #endif
       {
 
-  std::cerr << "Starting sending rate = " << sending_rate_ << std::endl;
+  // std::cerr << "Starting sending rate = " << sending_rate_ << std::endl;
   #ifndef QUIC_PORT
   if (Options::Get("-log=") == NULL) {
     log = new PccEventLogger("pcc_log.txt");
@@ -188,9 +193,9 @@ QuicTime PccSender::GetCurrentRttEstimate(QuicTime sent_time) {
 }
 
 QuicBandwidth PccSender::UpdateSendingRate(QuicTime event_time) {
-    rate_control_lock_->lock();
+    // rate_control_lock_->lock();
   sending_rate_ = rate_controller_->GetNextSendingRate(sending_rate_, event_time);
-    rate_control_lock_->unlock();
+    // rate_control_lock_->unlock();
     // std::cerr << "PCC: rate = " << sending_rate_ << std::endl;
   return sending_rate_;
 }
@@ -201,38 +206,36 @@ void PccSender::OnPacketSent(QuicTime sent_time,
                              QuicByteCount bytes,
                              UDT_UNUSED HasRetransmittableData is_retransmittable) {
 
+  rate_control_lock_->lock();
   if (ShouldCreateNewMonitorInterval(sent_time)) {
       QuicTime rtt_estimate = GetCurrentRttEstimate(sent_time);
       QuicTime start_time = sent_time;
+      QuicTime prev_dur = 0;
       while (interval_queue_.HasFinishedInterval(sent_time)) {
         MonitorInterval mi = interval_queue_.Pop();
         start_time = mi.GetEndTime();
         rtt_estimate = mi.GetObsRtt();
+        prev_dur = mi.GetEndTime() - mi.GetStartTime();
         // std::cerr << "MI " << mi.GetId() << " Finished, end_time: " << mi.GetEndTime() << ", cur_time: " << sent_time << ", gap: " << (mi.GetEndTime() - sent_time) / 1000000.0 << std::endl;
         mi.SetUtility(utility_calculator_->CalculateUtility(interval_analysis_group_, mi));
-        rate_control_lock_->lock();
+        // rate_control_lock_->lock();
         rate_controller_->MonitorIntervalFinished(mi);
-        rate_control_lock_->unlock();
+        // rate_control_lock_->unlock();
       }
       // std:: cerr << "PccSender OnPacketSent: while loop  finishes" << std::endl;
     // Set the monitor duration to 1.5 of smoothed rtt.
     // QuicTime rtt_estimate = GetCurrentRttEstimate(sent_time);
     float sending_rate = UpdateSendingRate(sent_time);
-    QuicTime monitor_duration = ComputeMonitorDuration(sending_rate, rtt_estimate);
+    QuicTime monitor_duration = ComputeMonitorDuration(sending_rate, rtt_estimate, prev_dur);
     //std::cerr << "\tTime: " << sent_time << std::endl;
     //std::cerr << "\tPacket Number: " << packet_number << std::endl;
+    // start_time = sent_time;
     MonitorInterval mi = MonitorInterval(sending_rate, start_time, start_time + monitor_duration);
     // std::cerr << "MI " << mi.GetId() << " create, Duration: " << monitor_duration/1000000.0 << "s" << ", rtt" << rtt_estimate/1000000.0 << std::endl;
     interval_queue_.Push(mi);
-
-    #if defined(QUIC_PORT) && defined(QUIC_PORT_LOCAL)
-    printf("S %d | st=%d r=%6.3lf rtt=%7ld\n",
-           is_useful, mode_,
-           interval_queue_.current().sending_rate.ToKBitsPerSecond() / 1000.0,
-           rtt_stats_->smoothed_rtt().ToMicroseconds());
-    #endif
   }
   interval_queue_.OnPacketSent(sent_time, packet_number, bytes);
+  rate_control_lock_->unlock();
 }
 
 void PccSender::OnCongestionEvent(UDT_UNUSED bool rtt_updated,
@@ -248,7 +251,34 @@ void PccSender::OnCongestionEvent(UDT_UNUSED bool rtt_updated,
     UpdateCurrentRttEstimate(rtt);
   }
   #endif
+  rate_control_lock_->lock();
   int64_t rtt_estimate = GetCurrentRttEstimate(event_time);
+  if (ShouldCreateNewMonitorInterval(event_time)) {
+      QuicTime start_time = event_time;
+      QuicTime prev_dur = 0;
+      while (interval_queue_.HasFinishedInterval(event_time)) {
+        MonitorInterval mi = interval_queue_.Pop();
+        start_time = mi.GetEndTime();
+        rtt_estimate = mi.GetObsRtt();
+        prev_dur = mi.GetEndTime() - mi.GetStartTime();
+        // std::cerr << "MI " << mi.GetId() << " Finished, end_time: " << mi.GetEndTime() << ", cur_time: " << event_time << ", gap: " << (mi.GetEndTime() - event_time) / 1000000.0 << std::endl;
+        mi.SetUtility(utility_calculator_->CalculateUtility(interval_analysis_group_, mi));
+        // rate_control_lock_->lock();
+        rate_controller_->MonitorIntervalFinished(mi);
+        // rate_control_lock_->unlock();
+      }
+  //     // std:: cerr << "PccSender OnPacketSent: while loop  finishes" << std::endl;
+  //   // Set the monitor duration to 1.5 of smoothed rtt.
+  //   // QuicTime rtt_estimate = GetCurrentRttEstimate(sent_time);
+    float sending_rate = UpdateSendingRate(event_time);
+    QuicTime monitor_duration = ComputeMonitorDuration(sending_rate, rtt_estimate, prev_dur);
+    //std::cerr << "\tTime: " << sent_time << std::endl;
+    //std::cerr << "\tPacket Number: " << packet_number << std::endl;
+    // start_time = event_time;
+    MonitorInterval mi = MonitorInterval(sending_rate, start_time, start_time + monitor_duration);
+    interval_queue_.Push(mi);
+    std::cerr << "MI " << mi.GetId() << " create, Duration: " << monitor_duration/1000000.0 << "s, start_time=" <<  start_time << ", end_time=" << start_time + monitor_duration << ", rtt" << rtt_estimate/1000000.0 << ", interval queue length:" << interval_queue_.Size() << std::endl;
+  }
 
   interval_queue_.OnCongestionEvent(acked_packets,
                                     lost_packets,
@@ -262,6 +292,7 @@ void PccSender::OnCongestionEvent(UDT_UNUSED bool rtt_updated,
   //   rate_controller_->MonitorIntervalFinished(mi);
   //   rate_control_lock_->unlock();
   // }
+  rate_control_lock_->unlock();
 }
 
 #ifdef QUIC_PORT
