@@ -147,6 +147,14 @@ PccSender::PccSender(QuicTime initial_rtt_us,
   }
   rate_controller_ = PccRateControllerFactory::Create(rc_name_str, call_freq, log);
     rate_control_lock_ = new std::mutex();
+
+    if (Options::Get("--save-dir=") != NULL) {
+        std::string pkt_log_fn = std::string(Options::Get("--save-dir=")) +
+            "/packet_log.csv";
+        packet_log.open(pkt_log_fn);
+    } else {
+        std::cerr <<   "--save-dir= is NULL"  << std::endl;
+    }
 }
 
 #ifndef QUIC_PORT
@@ -155,6 +163,7 @@ PccSender::~PccSender() {
     delete utility_calculator_;
     delete rate_controller_;
     delete rate_control_lock_;
+    packet_log.close();
 }
 
 #endif
@@ -230,8 +239,8 @@ void PccSender::OnPacketSent(QuicTime sent_time,
     //std::cerr << "\tTime: " << sent_time << std::endl;
     //std::cerr << "\tPacket Number: " << packet_number << std::endl;
     // start_time = sent_time;
-    MonitorInterval mi = MonitorInterval(sending_rate, start_time, start_time + monitor_duration);
-    // std::cerr << "MI " << mi.GetId() << " create, Duration: " << monitor_duration/1000000.0 << "s" << ", rtt" << rtt_estimate/1000000.0 << std::endl;
+    MonitorInterval mi = MonitorInterval(sending_rate, start_time, start_time + monitor_duration, packet_log);
+    std::cerr << "MI " << mi.GetId() << " create, Duration: " << monitor_duration/1000000.0 << "s" << ", rtt" << rtt_estimate/1000000.0 << std::endl;
     interval_queue_.Push(mi);
   }
   interval_queue_.OnPacketSent(sent_time, packet_number, bytes);
@@ -275,7 +284,7 @@ void PccSender::OnCongestionEvent(UDT_UNUSED bool rtt_updated,
     //std::cerr << "\tTime: " << sent_time << std::endl;
     //std::cerr << "\tPacket Number: " << packet_number << std::endl;
     // start_time = event_time;
-    MonitorInterval mi = MonitorInterval(sending_rate, start_time, start_time + monitor_duration);
+    MonitorInterval mi = MonitorInterval(sending_rate, start_time, start_time + monitor_duration, packet_log);
     interval_queue_.Push(mi);
     std::cerr << "MI " << mi.GetId() << " create, Duration: " << monitor_duration/1000000.0 << "s, start_time=" <<  start_time << ", end_time=" << start_time + monitor_duration << ", rtt" << rtt_estimate/1000000.0 << ", interval queue length:" << interval_queue_.Size() << std::endl;
   }

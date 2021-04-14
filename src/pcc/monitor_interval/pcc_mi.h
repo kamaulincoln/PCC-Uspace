@@ -5,6 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include "../../core/options.h"
 
 #ifdef QUIC_PORT
 #ifdef QUIC_PORT_LOCAL
@@ -70,7 +71,8 @@ struct PacketRttSample {
 struct MonitorInterval {
  //friend class MonitorIntervalMetric;
  //public:
-  MonitorInterval(QuicBandwidth sending_rate, QuicTime start_time, QuicTime end_time);
+  MonitorInterval(QuicBandwidth sending_rate, QuicTime start_time, QuicTime end_time,
+                  std::ofstream& packet_log);
   #if defined(QUIC_PORT) && defined(QUIC_PORT_LOCAL)
   explicit MonitorInterval(const MonitorInterval&);
   #endif
@@ -116,7 +118,12 @@ struct MonitorInterval {
   uint64_t GetFirstAckLatency() const;
   uint64_t GetLastAckLatency() const;
 
-  int GetAveragePacketSize() const { return bytes_sent / n_packets_sent; }
+  int GetAveragePacketSize() const {
+      if (n_packets_sent == 0) {
+          return 1500;
+      }
+      return bytes_sent / n_packets_sent;
+  }
   double GetUtility() const { return utility; }
 
   const std::vector<PacketRttSample>& GetRTTSamples() const;
@@ -172,6 +179,7 @@ struct MonitorInterval {
 
   // A sample of the RTT for each packet.
   std::vector<PacketRttSample> packet_rtt_samples;
+  std::ofstream* pkt_log;
 };
 
 #ifdef QUIC_PORT

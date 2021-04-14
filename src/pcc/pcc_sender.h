@@ -36,6 +36,8 @@
 #include "monitor_interval/pcc_mi_queue.h"
 #include "pcc_logger.h"
 #include <iostream>
+#include <fstream>
+#include <cstring>
 #define QUIC_EXPORT_PRIVATE
 
 typedef bool HasRetransmittableData;
@@ -184,6 +186,7 @@ class QUIC_EXPORT_PRIVATE PccSender
   PccUtilityCalculator* utility_calculator_;
   PccRateController* rate_controller_;
   std::mutex* rate_control_lock_;
+  std::ofstream packet_log;
 };
 
 #ifdef QUIC_PORT
