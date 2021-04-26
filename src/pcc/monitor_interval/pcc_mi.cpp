@@ -127,9 +127,10 @@ void MonitorInterval::OnPacketAcked(QuicTime cur_time, QuicPacketNumber packet_n
                     << packet_number << ","
                     << "acked" << ","
                     << packet_size <<","
-                    << rtt  << ","
                     << (start_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
-                    << (end_time - first_mi_first_packet_sent_time) / 1000000.0 << std::endl;
+                    << (end_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
+                    << rtt
+                    << std::endl;
     }
 }
 
