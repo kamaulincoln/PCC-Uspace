@@ -1932,7 +1932,8 @@ int CUDT::listen(sockaddr* addr, CPacket& packet)
 void CUDT::checkTimers()
 {
     bool above_loss_threshold = true;
-    uint64_t loss_thresh_us = 2.0 * m_iRTT + 4 * m_iRTTVar;
+    // uint64_t loss_thresh_us = 2.0 * m_iRTT + 4 * m_iRTTVar;
+    uint64_t loss_thresh_us = 3600000000;
     // std::cerr << "loss_thresh: "  << loss_thresh_us / 1000.0 << "ms" << std::endl;
     struct timespec cur_time;
     clock_gettime(CLOCK_MONOTONIC, &cur_time);

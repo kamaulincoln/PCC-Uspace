@@ -92,6 +92,8 @@ void MonitorInterval::OnPacketSent(QuicTime cur_time, QuicPacketNumber packet_nu
 
 void MonitorInterval::OnPacketAcked(QuicTime cur_time, QuicPacketNumber packet_number, QuicByteCount packet_size, QuicTime rtt) {
     std::cerr << "MI " << id << " ack " << packet_number << std::endl;
+    if (rtt != 0) {
+
     bytes_acked += packet_size;
     packet_rtt_samples.push_back(PacketRttSample(packet_number, rtt));
     if (first_packet_ack_time == 0) {
@@ -132,6 +134,7 @@ void MonitorInterval::OnPacketAcked(QuicTime cur_time, QuicPacketNumber packet_n
                     << rtt
                     << std::endl;
     }
+    }
 }
 
 void MonitorInterval::OnPacketLost(QuicTime cur_time, QuicPacketNumber packet_number, QuicByteCount packet_size) {
@@ -166,11 +169,13 @@ void MonitorInterval::OnPacketLost(QuicTime cur_time, QuicPacketNumber packet_nu
 
 bool MonitorInterval::AllPacketsSent(QuicTime cur_time) const {
     //std::cout << "Checking if all packets sent: " << cur_time << " >= " << end_time << std::endl;
-    return (cur_time >= end_time);
+    return (cur_time >= end_time); // && (packet_rtt_samples.size() > 0);
 }
 
 bool MonitorInterval::AllPacketsAccountedFor(QuicTime cur_time) {
-    return AllPacketsSent(cur_time); //  && (n_packets_accounted_for == n_packets_sent);
+    bool stop = AllPacketsSent(cur_time); //  && (n_packets_accounted_for == n_packets_sent);
+    end_time = cur_time;
+    return stop;
 }
 
 QuicTime MonitorInterval::GetStartTime() const {
