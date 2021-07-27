@@ -72,7 +72,7 @@ struct MonitorInterval {
  //friend class MonitorIntervalMetric;
  //public:
   MonitorInterval(QuicBandwidth sending_rate, QuicTime start_time, QuicTime end_time,
-                  std::ofstream& packet_log);
+                  std::ofstream& packet_log, QuicTime prev_ack_time);
   #if defined(QUIC_PORT) && defined(QUIC_PORT_LOCAL)
   explicit MonitorInterval(const MonitorInterval&);
   #endif
@@ -88,6 +88,7 @@ struct MonitorInterval {
 
   bool AllPacketsSent(QuicTime cur_time) const;
   bool AllPacketsAccountedFor(QuicTime cur_time);
+  bool HasPacketAck() const;
 
   QuicBandwidth GetTargetSendingRate() const;
   QuicTime GetStartTime() const;

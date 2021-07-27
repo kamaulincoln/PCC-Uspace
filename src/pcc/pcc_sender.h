@@ -181,6 +181,7 @@ class QUIC_EXPORT_PRIVATE PccSender
   QuicRandom* random_;
   #else
   QuicTime avg_rtt_;
+  double smoothed_rtt_;
   #endif
 
   PccUtilityCalculator* utility_calculator_;

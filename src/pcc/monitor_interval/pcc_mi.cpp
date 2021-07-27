@@ -45,7 +45,7 @@ int MonitorInterval::next_id = 0;
 QuicTime first_mi_first_packet_sent_time = 0;
 
 MonitorInterval::MonitorInterval(QuicBandwidth sending_rate, QuicTime start_time, QuicTime end_time,
-                                 std::ofstream& packet_log) {
+                                 std::ofstream& packet_log, QuicTime prev_ack_time) {
     this->target_sending_rate = sending_rate;
     this->start_time = start_time;
     this->end_time = end_time;
@@ -59,6 +59,7 @@ MonitorInterval::MonitorInterval(QuicBandwidth sending_rate, QuicTime start_time
     id = next_id;
     ++next_id;
     pkt_log = &packet_log;
+    this->first_packet_ack_time = prev_ack_time;
 }
 
 void MonitorInterval::OnPacketSent(QuicTime cur_time, QuicPacketNumber packet_number, QuicByteCount packet_size) {
@@ -97,9 +98,9 @@ void MonitorInterval::OnPacketAcked(QuicTime cur_time, QuicPacketNumber packet_n
     bytes_acked += packet_size;
     packet_rtt_samples.push_back(PacketRttSample(packet_number, rtt));
     if (first_packet_ack_time == 0) {
-        first_packet_ack_time = cur_time;
-        //std::cerr << "MI " << id << " first ack " << packet_number << std::endl;
-        //std::cerr << "\tAck time: " << cur_time << std::endl;
+        // first_packet_ack_time = cur_time;
+        std::cerr << "MI " << id << " first ack " << packet_number << std::endl;
+        std::cerr << "\tAck time: " << first_packet_ack_time << std::endl;
     }
     last_packet_ack_time = cur_time;
     // if (ContainsPacket(packet_number) && packet_number > last_packet_number_accounted_for) {
@@ -172,8 +173,13 @@ bool MonitorInterval::AllPacketsSent(QuicTime cur_time) const {
     return (cur_time >= end_time); // && (packet_rtt_samples.size() > 0);
 }
 
+bool MonitorInterval::HasPacketAck() const {
+  // return true;
+  return bytes_acked > 0 || bytes_lost > 0;
+}
+
 bool MonitorInterval::AllPacketsAccountedFor(QuicTime cur_time) {
-    bool stop = AllPacketsSent(cur_time); //  && (n_packets_accounted_for == n_packets_sent);
+    bool stop = AllPacketsSent(cur_time) && HasPacketAck(); //  && (n_packets_accounted_for == n_packets_sent);
     end_time = cur_time;
     return stop;
 }

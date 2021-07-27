@@ -216,12 +216,12 @@ void PccPythonRateController::MonitorIntervalFinished(const MonitorInterval& mi)
         mi.GetBytesLost(),
         (mi.GetStartTime() - time_offset_usec) / (double)USEC_PER_SEC, // added by Zhengxu
         (mi.GetEndTime() - time_offset_usec) / (double)USEC_PER_SEC, // added by Zhengxu
-        (mi.GetStartTime() - time_offset_usec) / (double)USEC_PER_SEC, // added by Zhengxu
-        (mi.GetEndTime() - time_offset_usec) / (double)USEC_PER_SEC, // added by Zhengxu
+        // (mi.GetStartTime() - time_offset_usec) / (double)USEC_PER_SEC, // added by Zhengxu
+        // (mi.GetEndTime() - time_offset_usec) / (double)USEC_PER_SEC, // added by Zhengxu
         // (mi.GetSendStartTime() - time_offset_usec) / (double)USEC_PER_SEC,
         // (mi.GetSendEndTime() - time_offset_usec) / (double)USEC_PER_SEC,
-        // (mi.GetRecvStartTime() - time_offset_usec) / (double)USEC_PER_SEC,
-        // (mi.GetRecvEndTime() - time_offset_usec) / (double)USEC_PER_SEC, //  + 1/(mi.GetTargetSendingRate() / 8 / mi.GetAveragePacketSize()),
+        (mi.GetRecvStartTime() - time_offset_usec) / (double)USEC_PER_SEC,
+        (mi.GetRecvEndTime() - time_offset_usec) / (double)USEC_PER_SEC, //  + 1/(mi.GetTargetSendingRate() / 8 / mi.GetAveragePacketSize()),
         mi.GetRTTSamples(), // added by Zhengxu
         mi.GetAveragePacketSize(),
         // mi.GetFirstAckLatency() / (double)USEC_PER_SEC,

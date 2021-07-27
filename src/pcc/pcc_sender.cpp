@@ -81,14 +81,17 @@ QuicTime PccSender::ComputeMonitorDuration(
                kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
                    kDefaultTCPMSS / (float)sending_rate << ", prev_dur=" << prev_dur << std::endl;
     if (rtt == 0 && prev_dur == 0)
-        return 10000;
+        return 100000;
         // return kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
         //            kDefaultTCPMSS / (float)sending_rate;
-    if (rtt == 0)
-        return prev_dur;
-    // return std::max(kMonitorIntervalDuration * rtt, kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
-    //                kDefaultTCPMSS / (float)sending_rate);
-    return kMonitorIntervalDuration * rtt; // + kNumMicrosPerSecond * kBitsPerByte * kDefaultTCPMSS / (float)sending_rate;
+    return (QuicTime) smoothed_rtt_;
+    // return avg_rtt_;
+    // Comment out to test smoothed_rtt_ as MI duration
+    // if (rtt == 0)
+    //     return prev_dur;
+    // // return std::max(kMonitorIntervalDuration * rtt, kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
+    // //                kDefaultTCPMSS / (float)sending_rate);
+    // return kMonitorIntervalDuration * rtt; // + kNumMicrosPerSecond * kBitsPerByte * kDefaultTCPMSS / (float)sending_rate;
 }
 #endif
 
@@ -156,6 +159,7 @@ PccSender::PccSender(QuicTime initial_rtt_us,
     } else {
         std::cerr <<   "--save-dir= is NULL"  << std::endl;
     }
+    smoothed_rtt_ = 0;
 }
 
 #ifndef QUIC_PORT
@@ -183,7 +187,7 @@ void PccSender::Reset() {
 
 bool PccSender::ShouldCreateNewMonitorInterval(QuicTime sent_time) {
     return interval_queue_.Empty() ||
-      interval_queue_.Current().AllPacketsSent(sent_time);
+      (interval_queue_.Current().AllPacketsSent(sent_time) && interval_queue_.Current().HasPacketAck());
 }
 
 void PccSender::UpdateCurrentRttEstimate(QuicTime rtt) {
@@ -191,6 +195,7 @@ void PccSender::UpdateCurrentRttEstimate(QuicTime rtt) {
     return;
     #else
     avg_rtt_ = rtt;
+    smoothed_rtt_ = (7.0 * smoothed_rtt_ + (double)rtt) / 8.0;
     #endif
 }
 
@@ -221,11 +226,14 @@ void PccSender::OnPacketSent(QuicTime sent_time,
       QuicTime rtt_estimate = GetCurrentRttEstimate(sent_time);
       QuicTime start_time = sent_time;
       QuicTime prev_dur = 0;
+      QuicTime prev_ack_time = sent_time;
       while (interval_queue_.HasFinishedInterval(sent_time)) {
         MonitorInterval mi = interval_queue_.Pop();
         start_time = mi.GetEndTime();
         rtt_estimate = mi.GetObsRtt();
         prev_dur = mi.GetEndTime() - mi.GetStartTime();
+        if (mi.GetRecvEndTime() != 0)
+            prev_ack_time = mi.GetRecvEndTime();
         // std::cerr << "MI " << mi.GetId() << " Finished, end_time: " << mi.GetEndTime() << ", cur_time: " << sent_time << ", gap: " << (mi.GetEndTime() - sent_time) / 1000000.0 << std::endl;
         mi.SetUtility(utility_calculator_->CalculateUtility(interval_analysis_group_, mi));
         // rate_control_lock_->lock();
@@ -237,10 +245,10 @@ void PccSender::OnPacketSent(QuicTime sent_time,
     // QuicTime rtt_estimate = GetCurrentRttEstimate(sent_time);
     float sending_rate = UpdateSendingRate(sent_time);
     QuicTime monitor_duration = ComputeMonitorDuration(sending_rate, rtt_estimate, prev_dur);
-    //std::cerr << "\tTime: " << sent_time << std::endl;
+    std::cerr << "Sent Time: " << sent_time << ", prev_ack_time: " << prev_ack_time << std::endl;
     //std::cerr << "\tPacket Number: " << packet_number << std::endl;
     // start_time = sent_time;
-    MonitorInterval mi = MonitorInterval(sending_rate, start_time, start_time + monitor_duration, packet_log);
+    MonitorInterval mi = MonitorInterval(sending_rate, start_time, start_time + monitor_duration, packet_log, prev_ack_time);
     std::cerr << "MI " << mi.GetId() << " create, Duration: " << monitor_duration/1000000.0 << "s" << ", rtt" << rtt_estimate/1000000.0 << std::endl;
     interval_queue_.Push(mi);
   }
