@@ -76,10 +76,10 @@ QuicTime::Delta PccSender::ComputeMonitorDuration(
 QuicTime PccSender::ComputeMonitorDuration(
     QuicBandwidth sending_rate,
     QuicTime rtt, QuicTime prev_dur) {
-    std::cerr << "ComputeMonitorDuration: rtt=" << rtt << ", 1.0 * RTT=" <<
-        kMonitorIntervalDuration * rtt << ", dur of sending rate=" <<
-               kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
-                   kDefaultTCPMSS / (float)sending_rate << ", prev_dur=" << prev_dur << std::endl;
+    // std::cerr << "ComputeMonitorDuration: rtt=" << rtt << ", 1.0 * RTT=" <<
+    //     kMonitorIntervalDuration * rtt << ", dur of sending rate=" <<
+    //            kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
+    //                kDefaultTCPMSS / (float)sending_rate << ", prev_dur=" << prev_dur << std::endl;
     if (rtt == 0 && prev_dur == 0)
         return 100000;
         // return kNumMicrosPerSecond * kMinimumPacketsPerInterval * kBitsPerByte *
@@ -245,11 +245,11 @@ void PccSender::OnPacketSent(QuicTime sent_time,
     // QuicTime rtt_estimate = GetCurrentRttEstimate(sent_time);
     float sending_rate = UpdateSendingRate(sent_time);
     QuicTime monitor_duration = ComputeMonitorDuration(sending_rate, rtt_estimate, prev_dur);
-    std::cerr << "Sent Time: " << sent_time << ", prev_ack_time: " << prev_ack_time << std::endl;
+    // std::cerr << "Sent Time: " << sent_time << ", prev_ack_time: " << prev_ack_time << std::endl;
     //std::cerr << "\tPacket Number: " << packet_number << std::endl;
     // start_time = sent_time;
     MonitorInterval mi = MonitorInterval(sending_rate, start_time, start_time + monitor_duration, packet_log, prev_ack_time);
-    std::cerr << "MI " << mi.GetId() << " create, Duration: " << monitor_duration/1000000.0 << "s" << ", rtt" << rtt_estimate/1000000.0 << std::endl;
+    // std::cerr << "MI " << mi.GetId() << " create, Duration: " << monitor_duration/1000000.0 << "s" << ", rtt" << rtt_estimate/1000000.0 << ", sending rate "<< sending_rate/1000000.0 << std::endl;
     interval_queue_.Push(mi);
   }
   interval_queue_.OnPacketSent(sent_time, packet_number, bytes);

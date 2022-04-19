@@ -136,7 +136,6 @@ void* monitor(void* s) {
                 cout << "perfmon: " << UDT::getlasterror().getErrorMessage() << endl;
                 break;
             }
-            cout << i << endl;
             output_file   << i << "\t"
                           << perf.mbpsSendRate    << "\t\t"
                           << perf.msRTT           << "\t\t"

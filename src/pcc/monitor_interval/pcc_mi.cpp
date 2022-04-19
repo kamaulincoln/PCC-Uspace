@@ -69,7 +69,7 @@ void MonitorInterval::OnPacketSent(QuicTime cur_time, QuicPacketNumber packet_nu
         last_packet_number_accounted_for = first_packet_number - 1;
         //std::cerr << "MI " << id << " started with " << packet_number << ", dur " << (end_time - cur_time) << std::endl;
     }
-    std::cerr << "MI " << id << " sent: " << packet_number << ", packet_size=" << packet_size << ", time: " << cur_time << std::endl;
+    // std::cerr << "MI " << id << " sent: " << packet_number << ", packet_size=" << packet_size << ", time: " << cur_time << std::endl;
     last_packet_sent_time = cur_time;
     last_packet_number = packet_number;
     ++n_packets_sent;
@@ -81,26 +81,26 @@ void MonitorInterval::OnPacketSent(QuicTime cur_time, QuicPacketNumber packet_nu
 
 
     if (pkt_log != NULL && pkt_log->is_open()) {
-        *pkt_log << (cur_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
-                    << packet_number << ","
-                    << "sent" << ","
-                    << packet_size << ","
-                    << (start_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
-                    << (end_time - first_mi_first_packet_sent_time) / 1000000.0 << std::endl;
+        // *pkt_log << (cur_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
+        //             << packet_number << ","
+        //             << "sent" << ","
+        //             << packet_size << ","
+        //             << (start_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
+        //             << (end_time - first_mi_first_packet_sent_time) / 1000000.0 << std::endl;
     }
 
 }
 
 void MonitorInterval::OnPacketAcked(QuicTime cur_time, QuicPacketNumber packet_number, QuicByteCount packet_size, QuicTime rtt) {
-    std::cerr << "MI " << id << " ack " << packet_number << std::endl;
+    // std::cerr << "MI " << id << " ack " << packet_number << std::endl;
     if (rtt != 0) {
 
     bytes_acked += packet_size;
     packet_rtt_samples.push_back(PacketRttSample(packet_number, rtt));
     if (first_packet_ack_time == 0) {
         // first_packet_ack_time = cur_time;
-        std::cerr << "MI " << id << " first ack " << packet_number << std::endl;
-        std::cerr << "\tAck time: " << first_packet_ack_time << std::endl;
+        // std::cerr << "MI " << id << " first ack " << packet_number << std::endl;
+        // std::cerr << "\tAck time: " << first_packet_ack_time << std::endl;
     }
     last_packet_ack_time = cur_time;
     // if (ContainsPacket(packet_number) && packet_number > last_packet_number_accounted_for) {
@@ -126,14 +126,14 @@ void MonitorInterval::OnPacketAcked(QuicTime cur_time, QuicPacketNumber packet_n
     //     //std::cerr << "\tAck time: " << cur_time << std::endl;
     // }
     if (pkt_log != NULL && pkt_log->is_open()) {
-        *pkt_log << (cur_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
-                    << packet_number << ","
-                    << "acked" << ","
-                    << packet_size <<","
-                    << (start_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
-                    << (end_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
-                    << rtt
-                    << std::endl;
+        // *pkt_log << (cur_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
+        //             << packet_number << ","
+        //             << "acked" << ","
+        //             << packet_size <<","
+        //             << (start_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
+        //             << (end_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
+        //             << rtt
+        //             << std::endl;
     }
     }
 }
@@ -160,11 +160,11 @@ void MonitorInterval::OnPacketLost(QuicTime cur_time, QuicPacketNumber packet_nu
     //     last_packet_ack_time = cur_time;
     // }
     if (pkt_log!=NULL && pkt_log->is_open()) {
-        *pkt_log << (cur_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
-                    << packet_number << ","
-                    << "lost" << ","
-                    << (start_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
-                    << (end_time - first_mi_first_packet_sent_time) / 1000000.0 << std::endl;
+        // *pkt_log << (cur_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
+        //             << packet_number << ","
+        //             << "lost" << ","
+        //             << (start_time - first_mi_first_packet_sent_time) / 1000000.0 << ","
+        //             << (end_time - first_mi_first_packet_sent_time) / 1000000.0 << std::endl;
     }
 }
 

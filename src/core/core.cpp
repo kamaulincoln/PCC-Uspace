@@ -1807,8 +1807,8 @@ int CUDT::packData(CPacket& packet, uint64_t& ts)
     }
 	m_ullTargetTime = ts;
     TotalBytes += payload;
-    std::cerr << "entertime=" << entertime << ", TimeDiff=" << m_ullTimeDiff
-        << ", ts=targetTime=" << ts << std::endl;
+    // std::cerr << "entertime=" << entertime << ", TimeDiff=" << m_ullTimeDiff
+    //     << ", ts=targetTime=" << ts << std::endl;
 	return payload;
 }
 
