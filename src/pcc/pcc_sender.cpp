@@ -23,8 +23,6 @@
 #endif
 
 #include <algorithm>
-#include <iostream>
-using namespace std;
 
 #ifdef QUIC_PORT
 #ifdef QUIC_PORT_LOCAL
@@ -136,7 +134,6 @@ PccSender::PccSender(QuicTime initial_rtt_us,
   if (rc_name != NULL) {
       rc_name_str = std::string(rc_name);
   }
-  cout<<"~Rate Controller: "<<rc_name_str<<"call frequency "<<call_freq<<" log file: "<<log<<endl;
   rate_controller_ = PccRateControllerFactory::Create(rc_name_str, call_freq, log);
     rate_control_lock_ = new std::mutex();
 }
